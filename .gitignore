@@ -1,0 +1,15 @@
+# Dependencias descargadas y compiladas por scripts/setup_native.sh (incluye el clon de drone-ros)
+.deps/
+
+# Workspace ROS 2: solo se versiona el propio repo drone-sim; drone-ros se clona en ros2_ws/src/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+ros2_ws/src/
+
+# Logs de instalación y de pruebas
+logs/*
+!logs/.gitkeep
+
+__pycache__/
+*.pyc

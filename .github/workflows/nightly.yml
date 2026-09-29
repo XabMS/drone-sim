@@ -1,0 +1,62 @@
+name: Nightly
+
+# Instalación completa desde cero (drone.repos) + check_native.sh. Compila PX4 (más de 30 min),
+# por eso solo corre cada noche y a demanda, no en cada PR. ccache acelera las repeticiones.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    name: nightly
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 3G
+    steps:
+      - uses: actions/checkout@v4
+
+      # El runner trae ~14 GB libres; PX4 + Gazebo + ROS piden bastante más
+      - name: Liberar disco
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+
+      - name: Restaurar ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-px4-${{ hashFiles('drone.repos') }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-px4-${{ hashFiles('drone.repos') }}-
+            ccache-px4-
+
+      - name: Instalar (setup_native.sh)
+        run: ./scripts/setup_native.sh
+
+      - name: Guardar ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-px4-${{ hashFiles('drone.repos') }}-${{ github.run_id }}
+
+      - name: Comprobar (check_native.sh)
+        run: |
+          source env_native.sh
+          RUN_TESTS=1 ./scripts/check_native.sh
+        shell: bash
+
+      - name: Subir logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: logs/

@@ -1,0 +1,36 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sintaxis y shellcheck de los scripts
+        run: |
+          shopt -s nullglob
+          for f in scripts/*.sh env_native.sh; do bash -n "$f"; done
+          shellcheck -S warning scripts/*.sh env_native.sh
+
+      - name: Sintaxis de los scripts Python
+        run: python3 -m py_compile scripts/*.py tests/*.py
+
+      - name: drone.repos válido y con versiones fijadas
+        run: |
+          python3 - <<'PY'
+          import yaml
+          repos = yaml.safe_load(open("drone.repos"))["repositories"]
+          need = {"ros2_ws/src/drone-ros", ".deps/PX4-Autopilot",
+                  ".deps/px4_msgs_ws/src/px4_msgs", ".deps/src/Micro-XRCE-DDS-Agent"}
+          assert set(repos) == need, set(repos) ^ need
+          for k, v in repos.items():
+              assert v["type"] == "git" and v["url"] and v["version"], k
+          print("drone.repos OK:", {k: v["version"] for k, v in repos.items()})
+          PY

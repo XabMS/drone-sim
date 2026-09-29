@@ -1,0 +1,20 @@
+# Versiones fijadas del sistema (formato vcstool). Este fichero es lo que representa cada baseline (DOC-09 §5).
+# Las claves son rutas relativas a la raíz de drone-sim; scripts/setup_native.sh las lee.
+# XabMS se sustituye por el usuario de GitHub al crear los repos.
+repositories:
+  ros2_ws/src/drone-ros:
+    type: git
+    url: https://github.com/XabMS/drone-ros.git
+    version: main            # fijar a un commit o tag concreto cuando exista
+  .deps/PX4-Autopilot:
+    type: git
+    url: https://github.com/XabMS/drone-px4.git
+    version: v1.17.0-1.0.0   # PX4 v1.17.0 + drop_guard (rama drone)
+  .deps/px4_msgs_ws/src/px4_msgs:
+    type: git
+    url: https://github.com/PX4/px4_msgs.git
+    version: release/1.17
+  .deps/src/Micro-XRCE-DDS-Agent:
+    type: git
+    url: https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
+    version: v2.4.3
