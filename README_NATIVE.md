@@ -59,4 +59,4 @@ Para recompilar tus paquetes: `cd ros2_ws && colcon build --symlink-install`.
 - Simulador por defecto: **SIH** (sin Gazebo), que es con lo que se verificó S2 y lo que cabe bien en gráfica integrada. `SIM=gz` usa Gazebo.
 - PX4 vive en `.deps/PX4-Autopilot`, clonado del fork `drone-px4` en el tag de `drone.repos` (PX4 v1.17.0 + drop_guard como commits reales, rama `drone`).
 - El agente XRCE tiene un wrapper (`.deps/bin/MicroXRCEAgent`) que carga sus propias librerías Fast-DDS solo para ese proceso, para no chocar con las de ROS 2.
-- `px4_msgs` está en un workspace aparte (`.deps/px4_msgs_ws`). **Pendiente para S3:** el fork añade `DropGuardStatus.msg`; `px4_msgs release/1.17` no lo trae, así que en S3 habrá que generar `px4_msgs` desde el `msg/` del fork `drone-px4`.
+- `px4_msgs` está en un workspace aparte (`.deps/px4_msgs_ws`). `px4_msgs release/1.17` no trae `DropGuardStatus.msg` (lo añade el fork `drone-px4`), así que el paso `msgs` lo copia del `msg/` del fork fijado en `drone.repos` antes de compilar (lista `FORK_MSGS` en `setup_native.sh`). Si el mensaje cambia en el fork, repite `./scripts/setup_native.sh msgs`.

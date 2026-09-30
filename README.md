@@ -50,8 +50,6 @@ drone-sim/
 
 ## Pendiente
 
-- **S3:** `px4_msgs release/1.17` no incluye `DropGuardStatus.msg` (lo añade el fork `drone-px4`). Habrá que generar
-  `px4_msgs` desde el `msg/` del fork.
 - CI: `nightly.yml` ejecuta la instalación completa y `check_native.sh` (ver el workflow).
 
 ## Licencia
