@@ -28,7 +28,8 @@ RUN_TESTS=1 ./scripts/check_native.sh
 ```
 
 La primera instalación tarda entre 45 y 90 min (la compilación de PX4 pasa de 30 min). Detalles en
-[`README_NATIVE.md`](README_NATIVE.md); el hito S2 (gestión de misión) está en [`README_S2.md`](README_S2.md).
+[`README_NATIVE.md`](README_NATIVE.md); el hito S2 (gestión de misión) está en [`README_S2.md`](README_S2.md) y el S3
+(suelta real con confirmación del piloto) en [`README_S3.md`](README_S3.md).
 
 ## Estructura
 
@@ -36,8 +37,8 @@ La primera instalación tarda entre 45 y 90 min (la compilación de PX4 pasa de 
 drone-sim/
 ├── drone.repos        versiones exactas de drone-ros, drone-px4, px4_msgs y Micro XRCE-DDS Agent
 ├── env_native.sh      entorno de cada terminal (source)
-├── scripts/           setup_native.sh, check_native.sh, start_sim.sh, s2_scenarios.py
-├── tests/             sitl_drop_guard_test.py (drop_guard en PX4 SITL)
+├── scripts/           setup_native.sh, check_native.sh, start_sim.sh, s2_scenarios.py, s3_scenarios.py, run_s3.sh
+├── tests/             sitl_drop_guard_test.py (drop_guard en PX4 SITL), make_s3_data.py (datos de los escenarios S3)
 ├── legacy/            enfoque con contenedor (descartado, no se mantiene)
 ├── ros2_ws/src/       (ignorado) aquí se clona drone-ros
 └── .deps/             (ignorado) PX4, agente XRCE, px4_msgs y pylibs
@@ -50,7 +51,7 @@ drone-sim/
 
 ## Pendiente
 
-- CI: `nightly.yml` ejecuta la instalación completa y `check_native.sh` (ver el workflow).
+- CI: `nightly.yml` ejecuta la instalación completa, `check_native.sh` y los escenarios S3 (`run_s3.sh`); ver el workflow.
 
 ## Licencia
 
