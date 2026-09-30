@@ -33,6 +33,9 @@ DEPS="${REPO_DIR}/.deps"
 PX4_DIR="${DEPS}/PX4-Autopilot"
 REPOS_FILE="${REPO_DIR}/drone.repos"
 JOBS="${JOBS:-$(nproc)}"
+# Mensajes que añade el fork drone-px4 y que px4_msgs release/1.17 no trae. Se copian del msg/ del fork
+# fijado en drone.repos, para que ROS 2 y PX4 compartan exactamente la misma definición (S3).
+FORK_MSGS=(DropGuardStatus)
 
 mkdir -p "${DEPS}" "${REPO_DIR}/logs"
 LOG="${REPO_DIR}/logs/setup_native_$(date +%Y%m%d_%H%M).log"
@@ -181,7 +184,17 @@ step_msgs() {
     mkdir -p "${ws}/src"
     [ -d "${ws}/src/px4_msgs/.git" ] || git clone --depth 1 --branch "${PX4_MSGS_REF}" \
         "${PX4_MSGS_URL}" "${ws}/src/px4_msgs"
-    if [ -f "${ws}/install/setup.bash" ]; then
+    # Superposición del fork: px4_msgs hace glob de msg/*.msg, basta con copiar los ficheros. El sello
+    # (hash de las definiciones) fuerza la recompilación si cambian o si aún no se habían añadido.
+    local m src stamp=""
+    for m in "${FORK_MSGS[@]}"; do
+        src="${PX4_DIR}/msg/${m}.msg"
+        [ -f "${src}" ] || die "Falta ${src}: ejecuta antes el paso px4."
+        cp "${src}" "${ws}/src/px4_msgs/msg/${m}.msg"
+        stamp+="$(sha256sum "${src}" | cut -d' ' -f1)"
+    done
+    stamp="$(printf '%s' "${stamp}" | sha256sum | cut -d' ' -f1)"
+    if [ -f "${ws}/install/setup.bash" ] && [ "$(cat "${ws}/install/.fork_msgs_stamp" 2>/dev/null || true)" = "${stamp}" ]; then
         echo "Ya compilado."
         return
     fi
@@ -189,8 +202,18 @@ step_msgs() {
     # shellcheck disable=SC1091
     source /opt/ros/jazzy/setup.bash
     set -u
+    # --cmake-force-configure: px4_msgs lista los .msg con file(GLOB) al configurar; sin reconfigurar,
+    # un mensaje recién copiado no entra en una compilación incremental.
     ( cd "${ws}" && colcon build --packages-select px4_msgs --parallel-workers "${JOBS}" \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release )
+        --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release )
+    set +u
+    # shellcheck disable=SC1091
+    source "${ws}/install/setup.bash"
+    set -u
+    for m in "${FORK_MSGS[@]}"; do
+        ros2 interface show "px4_msgs/msg/${m}" >/dev/null || die "px4_msgs no incluye ${m} tras compilar."
+    done
+    echo "${stamp}" > "${ws}/install/.fork_msgs_stamp"
 }
 
 # --------------------------------------------------------------------- pylibs

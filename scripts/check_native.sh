@@ -25,6 +25,7 @@ sec "Entorno"
 echo "$(lsb_release -ds 2>/dev/null) · ROS_DISTRO=${ROS_DISTRO:-?} · SIM=${SIM} · PX4_DIR=${PX4_DIR}"
 chk "ROS 2 Jazzy cargado"                       test "${ROS_DISTRO:-}" = "jazzy"
 chk "px4_msgs visible para ROS 2"               ros2 pkg prefix px4_msgs
+chk "px4_msgs incluye DropGuardStatus (del fork)" bash -c 'ros2 interface show px4_msgs/msg/DropGuardStatus >/dev/null'
 chk "drone_core, drone_interfaces, drone_mission compilados" bash -c 'ros2 pkg prefix drone_core && ros2 pkg prefix drone_interfaces && ros2 pkg prefix drone_mission'
 chk "MicroXRCEAgent arranca (-h)"               bash -c 'MicroXRCEAgent -h 2>&1 | grep -q "^Usage"'
 chk "pymavlink y pyulog importables"            python3 -c "import pymavlink, pyulog"
