@@ -2,7 +2,7 @@
 # Comprueba la instalación nativa de punta a punta. Requiere haber hecho `source env_native.sh`.
 #
 #   ./scripts/check_native.sh            # herramientas + validación de ops + humo de simulación
-#   RUN_TESTS=1 ./scripts/check_native.sh   # además, colcon test (64 tests esperados)
+#   RUN_TESTS=1 ./scripts/check_native.sh   # además, colcon test (156 tests esperados)
 #
 # Arranca PX4 SITL (SIH o Gazebo según $SIM) y el agente en segundo plano, comprueba que
 # los tópicos _v1 de PX4 llegan a ROS 2 y lo apaga todo. Deja el resultado en logs/check_native.txt
@@ -26,7 +26,7 @@ echo "$(lsb_release -ds 2>/dev/null) · ROS_DISTRO=${ROS_DISTRO:-?} · SIM=${SIM
 chk "ROS 2 Jazzy cargado"                       test "${ROS_DISTRO:-}" = "jazzy"
 chk "px4_msgs visible para ROS 2"               ros2 pkg prefix px4_msgs
 chk "px4_msgs incluye DropGuardStatus (del fork)" bash -c 'ros2 interface show px4_msgs/msg/DropGuardStatus >/dev/null'
-chk "drone_core, drone_interfaces, drone_mission compilados" bash -c 'ros2 pkg prefix drone_core && ros2 pkg prefix drone_interfaces && ros2 pkg prefix drone_mission'
+chk "paquetes de drone-ros compilados (core, interfaces, mission, payload, gcs_bridge)" bash -c 'for p in drone_core drone_interfaces drone_mission drone_payload drone_gcs_bridge; do ros2 pkg prefix "$p" || exit 1; done'
 chk "MicroXRCEAgent arranca (-h)"               bash -c 'MicroXRCEAgent -h 2>&1 | grep -q "^Usage"'
 chk "pymavlink y pyulog importables"            python3 -c "import pymavlink, pyulog"
 chk "PX4 SITL compilado"                        test -x "${PX4_DIR}/build/px4_sitl_default/bin/px4"
@@ -40,7 +40,7 @@ chk "donostia + dss_demo_01 valida"  ros2 run drone_core drone_validate "${OPS_D
 
 if [ "${RUN_TESTS:-0}" = "1" ]; then
     sec "Tests unitarios"
-    ( cd "${REPO}/ros2_ws" && colcon test --packages-select drone_core drone_mission >/dev/null 2>&1; colcon test-result | tail -3 )
+    ( cd "${REPO}/ros2_ws" && colcon test --packages-select drone_core drone_mission drone_payload drone_gcs_bridge >/dev/null 2>&1; colcon test-result | tail -3 )
     if ( cd "${REPO}/ros2_ws" && colcon test-result >/dev/null 2>&1 ); then ok "colcon test"; else bad "colcon test (mira colcon test-result --verbose)"; fi
 fi
 

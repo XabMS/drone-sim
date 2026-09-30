@@ -54,6 +54,13 @@ jobs:
           RUN_TESTS=1 ./scripts/check_native.sh
         shell: bash
 
+      # Hito S3: suelta real con confirmación del piloto por MAVLink (SIM-01 real, SIM-05, SIM-06, SIM-07 y aborto en DROP)
+      - name: Escenarios S3 (run_s3.sh)
+        run: |
+          source env_native.sh
+          ./scripts/run_s3.sh
+        shell: bash
+
       - name: Subir logs
         if: always()
         uses: actions/upload-artifact@v4
