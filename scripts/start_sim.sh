@@ -9,6 +9,10 @@
 #   SIM=gz                 -> Gazebo con el x500;  HEADLESS=1 sin interfaz
 #
 # El origen (home) se lee de ops/<ciudad>.yaml (repo drone-ros); no hay coordenadas en el código.
+#
+# Sin terminal (en segundo plano, con la salida a un fichero, desde CI) el stdin se cambia por una tubería que nunca da EOF.
+# Con stdin cerrado o en /dev/null, la consola pxh de PX4 repite el prompt sin parar y el log llega a GB. El target de make
+# no admite la opción -d de PX4 (sin consola), por eso se hace aquí.
 set -euo pipefail
 
 CITY="${1:-toulouse}"
@@ -36,10 +40,16 @@ EOF
 export PX4_HOME_LAT PX4_HOME_LON PX4_HOME_ALT
 echo "Ciudad: ${CITY}  home: ${PX4_HOME_LAT}, ${PX4_HOME_LON}, ${PX4_HOME_ALT} m"
 
+STDIN_PID=""
+if [ ! -t 0 ]; then
+    exec < <(exec sleep infinity)
+    STDIN_PID=$!
+fi
+
 # Agente XRCE en segundo plano (PX4 SITL se conecta por UDP 8888)
 MicroXRCEAgent udp4 -p 8888 > "${LOG_DIR}/xrce_agent.log" 2>&1 &
 AGENT_PID=$!
-trap 'kill ${AGENT_PID} 2>/dev/null || true' EXIT
+trap 'kill ${AGENT_PID} ${STDIN_PID} 2>/dev/null || true' EXIT
 
 cd "${PX4_DIR}"
 case "${SIM}" in

@@ -60,8 +60,7 @@ run_scenario() {
     rm -f "${PX4_ROOTFS}/parameters.bson" "${PX4_ROOTFS}/parameters_backup.bson"
     PIDS=()
 
-    # `sleep infinity |` mantiene abierto el stdin de PX4: sin él su consola repite el prompt sin parar y el log llega a GB
-    start "${prefix}.sim.log" bash -c "sleep infinity | '${REPO}/scripts/start_sim.sh' toulouse"
+    start "${prefix}.sim.log" "${REPO}/scripts/start_sim.sh" toulouse   # sin terminal: start_sim.sh protege el stdin de PX4
     local up=0 _
     for _ in $(seq 1 90); do
         if timeout 8 ros2 topic echo --once /fmu/out/vehicle_status_v1 --qos-reliability best_effort >/dev/null 2>&1; then
