@@ -31,7 +31,7 @@ pilot_confirm_bridge ◀── MAV_CMD_USER_1 ◀── tierra (QGroundControl)
 | `sim01_real` | SIM-01 | Misión completa con la suelta real: prevuelo bloqueado sin los `DG_*` cargados, confirmación fuera de tiempo rechazada, aviso al piloto con el hash, hash equivocado rechazado sin abrir, confirmación correcta, carga liberada y regreso |
 | `sim05` | SIM-05 | Llegada a la zona sin confirmación: no suelta (sin ninguna apertura) y regresa con la carga al agotar el tiempo |
 | `sim06` | SIM-06 | Orden de suelta forzada por ROS 2 (DDS) fuera del radio y bajo la banda de altura: la veta `drop_guard`; control positivo dentro de la zona |
-| `sim07` | SIM-07 | Carga que no se libera (`sim_stuck`): `NOT_RELEASED` en menos de 3 s, aviso al piloto y regreso con la carga |
+| `sim07` | SIM-07 | Carga que no se libera (`sim_stuck`): `NOT_RELEASED`, aviso al piloto en menos de TBD-1 = 5 s desde la orden de apertura (AR-009; `payload_manager` espera 3 s a ver la carga liberada) y regreso con la carga |
 | `abort` | — | `ABORT` del operador mientras se espera la confirmación: regreso sin abrir |
 
 ```bash
