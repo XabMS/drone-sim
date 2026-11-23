@@ -42,6 +42,7 @@ STATE_NAMES = ['PREFLIGHT', 'ARMING', 'TAKEOFF', 'CRUISE', 'APPROACH', 'DROP', '
 M_PER_DEG_LAT = 111194.9
 REASON_OUTSIDE_RADIUS = 9   # drop_guard::Reason
 REASON_BELOW_BAND = 10
+TBD1_S = 5.0                # AR-009, SR-PLD-004: de la orden de apertura al aviso de carga no liberada en tierra
 log = T.log
 results = []
 
@@ -88,11 +89,14 @@ class Ros(Node):
         self.history = []
         self.dg = None
         self.acks = []
+        self.release_t = None   # hora local de la primera orden DO_GRIPPER RELEASE vista en /fmu/in/vehicle_command
         reliable = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         px4 = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(MissionState, '/drone/mission/state', self.on_state, reliable)
         self.create_subscription(DropGuardStatus, '/fmu/out/drop_guard_status', lambda m: setattr(self, 'dg', m), px4)
         self.create_subscription(VehicleCommandAck, '/fmu/out/vehicle_command_ack', self.on_ack, px4)
+        self.create_subscription(VehicleCommand, '/fmu/in/vehicle_command', self.on_command,
+                                 QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT))
         self.cmd_pub = self.create_publisher(VehicleCommand, '/fmu/in/vehicle_command', px4)
         self.mission_cmd = self.create_client(MissionCommand, '/mission_manager/command')
         self.payload_params = self.create_client(SetParameters, '/payload_manager/set_parameters')
@@ -106,6 +110,11 @@ class Ros(Node):
     def on_ack(self, m):
         if m.command == VehicleCommand.VEHICLE_CMD_DO_GRIPPER:
             self.acks.append((m.result, m.result_param2))
+
+    def on_command(self, m):
+        if (self.release_t is None and m.command == VehicleCommand.VEHICLE_CMD_DO_GRIPPER
+                and int(m.param2) == VehicleCommand.GRIPPER_ACTION_RELEASE):
+            self.release_t = time.time()
 
     def call(self, client, request, timeout=10.0):
         client.wait_for_service(timeout_sec=10.0)
@@ -149,6 +158,7 @@ class Gcs:
         self.mav = mav
         self.lock = threading.Lock()
         self.texts = []
+        self.text_times = []   # (hora local de llegada, texto)
         self.acks = []
         self.beats = 0
 
@@ -162,6 +172,7 @@ class Gcs:
             kind = m.get_type()
             if kind == 'STATUSTEXT' and m.text.startswith(('SUELTA', 'RECHAZO')):
                 self.texts.append(m.text)
+                self.text_times.append((time.time(), m.text))
                 log(f'  tierra recibe STATUSTEXT: {m.text}')
             elif kind == 'COMMAND_ACK' and m.command == MAV_CMD_USER_1:
                 self.acks.append((m.result, m.get_srcComponent()))
@@ -279,6 +290,11 @@ def run_mission(scenario, ops_dir):
         check('RETURN con la carga', 'no se liberó' in causes.get('RETURN', ''), causes.get('RETURN'))
         check('drop_result NOT_RELEASED', drop_result == 4, f'drop_result={drop_result}')
         check('resultado avisado al piloto', any('CARGA NO LIBERADA' in t for t in gcs.texts), str(gcs.texts[-1:]))
+        # AR-009: de la orden de apertura (la publica payload_manager) a que el aviso llega a tierra, en menos de TBD-1
+        t_warn = next((t for t, text in gcs.text_times if 'CARGA NO LIBERADA' in text), None)
+        dt = t_warn - node.release_t if t_warn is not None and node.release_t is not None else None
+        check(f'aviso de carga no liberada en < TBD-1 ({TBD1_S:.0f} s)', dt is not None and 0.0 <= dt < TBD1_S,
+              f'{dt:.2f} s' if dt is not None else f'orden={node.release_t} aviso={t_warn}')
     elif scenario == 'abort':
         check('RETURN por aborto', causes.get('RETURN') == 'abortado por el operador', causes.get('RETURN'))
         check('misión ABORTED y sin apertura', node.state.result == 2 and release_count == 0,
