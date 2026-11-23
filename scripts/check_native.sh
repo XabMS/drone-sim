@@ -47,8 +47,7 @@ fi
 sec "Humo de simulación (${SIM}) — puede tardar 1-3 min la primera vez"
 pkill -f 'bin/px4' 2>/dev/null; pkill -f MicroXRCEAgent 2>/dev/null; sleep 1
 SIMLOG="${LOG_DIR}/check_native_sim.log"
-# `sleep infinity |` mantiene abierto el stdin de PX4 (su consola pxh no debe ver EOF)
-setsid bash -c "sleep infinity | '${REPO}/scripts/start_sim.sh' toulouse" > "${SIMLOG}" 2>&1 &
+setsid "${REPO}/scripts/start_sim.sh" toulouse > "${SIMLOG}" 2>&1 &   # sin terminal: start_sim.sh protege el stdin de PX4
 SIM_PGID=$!
 cleanup() {
     kill -- "-${SIM_PGID}" 2>/dev/null

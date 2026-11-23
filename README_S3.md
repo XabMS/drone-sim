@@ -57,7 +57,7 @@ apuntando a ellos):
 
 ```bash
 # Terminal A
-sleep infinity | ./scripts/start_sim.sh toulouse          # sleep infinity: evita el spam de pxh> en el log
+./scripts/start_sim.sh toulouse
 
 # Terminal B
 ros2 launch drone_payload s3.launch.py city:=toulouse mission_id:=s3_short
